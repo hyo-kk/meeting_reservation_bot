@@ -18,18 +18,24 @@
 
 ```
 meetingroom_reservaitior/
-├── reserve.py   # 메인 스크립트
-└── .env         # 로그인 정보 (SEOULAIHUB_ID, SEOULAIHUB_PW)
+├── reserve.py          # 진입점 (대화형 메뉴)
+├── modules/
+│   ├── config.py       # 상수 (URL, 사이트 ID 등)
+│   ├── auth.py         # 로그인
+│   ├── book.py         # 예약
+│   ├── query.py        # 조회
+│   └── cancel.py       # 취소
+└── .env                # 로그인 정보 (SEOULAIHUB_ID, SEOULAIHUB_PW)
 ```
 
-**reserve.py 주요 함수**
+**주요 함수**
 
-| 함수 | 설명 |
-|---|---|
-| `reserve()` | 예약 실행 (STEP1 → STEP2 → 신청) |
-| `get_facilities()` | 사이트별 시설 목록 동적 조회 |
-| `list_reservations()` | 예약 목록 조회 (전체 건물, 월별 / 날짜 지정) |
-| `cancel_reservation()` | 예약번호로 취소 |
+| 모듈 | 함수 | 설명 |
+|---|---|---|
+| `modules/book.py` | `reserve()` | 예약 실행 (STEP1 → STEP2 → 신청) |
+| `modules/book.py` | `get_facilities()` | 사이트별 시설 목록 동적 조회 |
+| `modules/query.py` | `list_reservations()` | 예약 목록 조회 (전체 건물, 월별 / 날짜 지정) |
+| `modules/cancel.py` | `cancel_reservation()` | 예약번호로 취소 |
 
 **지원 사이트**
 
