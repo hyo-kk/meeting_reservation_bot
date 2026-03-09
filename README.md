@@ -47,7 +47,13 @@ meetingroom_reservaitior/
 ## 환경 설정
 
 ```bash
-pip install playwright python-dotenv
+bash setup.sh
+```
+
+또는 직접 설치:
+
+```bash
+pip install -r requirements.txt
 playwright install chromium
 ```
 
