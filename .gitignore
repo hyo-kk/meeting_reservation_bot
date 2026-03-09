@@ -2,3 +2,5 @@
 *.png
 __pycache__/
 *.pyc
+.outlook_token.cache
+.outlook_events.json

@@ -11,6 +11,10 @@ from modules.config import SITE_IDS
 from modules.book import reserve, get_facilities, parse_time_range
 from modules.cancel import cancel_reservation
 from modules.query import list_reservations
+from modules.outlook import (
+    create_event, cancel_event,
+    save_event_id, get_event_id, remove_event_id,
+)
 
 
 # ─────────────────────────────────────────────
@@ -47,6 +51,47 @@ def ask_numbered_choice(title: str, options: list[str]) -> int:
         if val.isdigit() and 1 <= int(val) <= len(options):
             return int(val) - 1
         print(f"   1 ~ {len(options)} 사이의 번호를 입력해주세요.")
+
+
+# ─────────────────────────────────────────────
+# 아웃룩 연동 헬퍼
+# ─────────────────────────────────────────────
+
+def _outlook_sync_on_reserve(date: str, facility: str, site: str, time_range: str):
+    """예약 성공 후 아웃룩 일정 등록 여부 확인 및 처리"""
+    yn = input("\n  📅 아웃룩 캘린더에 일정을 등록하시겠습니까? (yes/no) : ").strip().lower()
+    if yn not in ("yes", "y"):
+        return
+
+    raw = input("  초대할 참가자 이메일을 입력해주세요 (쉼표 구분, 없으면 엔터) : ").strip()
+    attendees = [a.strip() for a in raw.split(",")] if raw else []
+    invalid = [a for a in attendees if a and "@" not in a]
+    if invalid:
+        print(f"  ⚠️  이메일 형식이 아닌 항목은 제외됩니다: {', '.join(invalid)}")
+
+    start_time, end_time = time_range.split("-")
+    event_id = create_event(
+        title=f"[회의실] {facility}",
+        date=date,
+        start_time=start_time,
+        end_time=end_time,
+        location=f"{site} {facility}",
+        attendees=attendees,
+    )
+    if event_id:
+        save_event_id(date, facility, start_time, event_id)
+
+
+def _outlook_sync_on_cancel(date: str, facility: str, start: str):
+    """예약 취소 후 아웃룩 일정 취소 여부 확인 및 처리"""
+    event_id = get_event_id(date, facility, start)
+    if not event_id:
+        return  # 등록된 아웃룩 일정 없음 — 조용히 스킵
+
+    yn = input("\n  📅 아웃룩 캘린더 일정도 취소하시겠습니까? (yes/no) : ").strip().lower()
+    if yn in ("yes", "y"):
+        if cancel_event(event_id):
+            remove_event_id(date, facility, start)
 
 
 # ─────────────────────────────────────────────
@@ -87,7 +132,9 @@ def menu_reserve():
 
     print()
     success = reserve(site=site, date=date, facility=facility, time_range=time_range)
-    if not success:
+    if success:
+        _outlook_sync_on_reserve(date, facility, site, time_range)
+    else:
         yn = input("\n  해당 날짜 현황을 조회하시겠습니까? (yes/no) : ").strip().lower()
         if yn in ("yes", "y"):
             menu_query(prefill_date=date)
@@ -126,6 +173,7 @@ def menu_cancel():
 
     print()
     cancel_reservation(r["bd_num"])
+    _outlook_sync_on_cancel(r["date"], r["facility_name"], r["start"])
 
 
 def menu_query(prefill_date: str = None):

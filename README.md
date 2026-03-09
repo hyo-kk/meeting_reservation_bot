@@ -24,8 +24,9 @@ meetingroom_reservaitior/
 │   ├── auth.py         # 로그인
 │   ├── book.py         # 예약
 │   ├── query.py        # 조회
-│   └── cancel.py       # 취소
-└── .env                # 로그인 정보 (SEOULAIHUB_ID, SEOULAIHUB_PW)
+│   ├── cancel.py       # 취소
+│   └── outlook.py      # 아웃룩 캘린더 연동 (Microsoft Graph API)
+└── .env                # 로그인 정보 (SEOULAIHUB_ID, SEOULAIHUB_PW, OUTLOOK_CLIENT_ID)
 ```
 
 **주요 함수**
@@ -36,6 +37,8 @@ meetingroom_reservaitior/
 | `modules/book.py` | `get_facilities()` | 사이트별 시설 목록 동적 조회 |
 | `modules/query.py` | `list_reservations()` | 예약 목록 조회 (전체 건물, 월별 / 날짜 지정) |
 | `modules/cancel.py` | `cancel_reservation()` | 예약번호로 취소 |
+| `modules/outlook.py` | `create_event()` | 아웃룩 캘린더 일정 등록 (참가자 초대 포함) |
+| `modules/outlook.py` | `cancel_event()` | 아웃룩 캘린더 일정 취소 |
 
 **지원 사이트**
 
@@ -67,7 +70,42 @@ playwright install chromium
 ```
 SEOULAIHUB_ID=아이디
 SEOULAIHUB_PW=비밀번호
+OUTLOOK_CLIENT_ID=애저_클라이언트_ID   # 아웃룩 연동 시 필요
 ```
+
+---
+
+## 아웃룩 캘린더 연동 설정 (선택)
+
+예약/취소 시 아웃룩 캘린더에 자동으로 일정을 등록·취소할 수 있습니다.
+
+### 1. Azure 앱 등록
+
+1. [portal.azure.com](https://portal.azure.com) → **앱 등록** → **새 등록**
+2. 이름 입력 후 등록
+3. **인증** → **플랫폼 추가** → **모바일 및 데스크톱 애플리케이션**
+   - 리디렉션 URI: `https://login.microsoftonline.com/common/oauth2/nativeclient` 선택
+4. **API 권한** → **권한 추가** → Microsoft Graph → 위임된 권한
+   - `Calendars.ReadWrite`, `User.Read` 추가
+5. **개요** 페이지의 **애플리케이션(클라이언트) ID** 복사
+
+### 2. .env에 추가
+
+```
+OUTLOOK_CLIENT_ID=복사한_클라이언트_ID
+```
+
+### 3. 최초 실행 시 인증
+
+아웃룩 연동을 처음 사용하면 디바이스 코드 인증 안내가 표시됩니다:
+
+```
+  🔑 아웃룩 로그인이 필요합니다:
+  To sign in, use a web browser to open the page https://microsoft.com/devicelogin
+  and enter the code XXXXXXXX to authenticate.
+```
+
+브라우저에서 코드 입력 후 Microsoft 계정으로 로그인하면 이후 자동으로 토큰이 갱신됩니다.
 
 ---
 
@@ -119,12 +157,13 @@ python reserve.py
 - 시간은 30분 단위 (예: `09:00-10:30`)
 - 전화 문의 시설 선택 시 안내 메시지 출력 후 종료
 - 예약 실패 시 해당 날짜 현황 조회로 바로 이동 가능
+- 예약 성공 후 아웃룩 캘린더 등록 여부 확인 (참가자 이메일 입력 시 초대 발송)
 
 ---
 
 ### 2. 회의실 예약 취소
 
-현재 시각 이후의 예약만 시간순으로 표시. 번호로 선택 후 확인.
+현재 시각 이후의 예약만 시간순으로 표시. 번호로 선택 후 확인. 아웃룩 일정이 연동된 예약은 취소 시 함께 삭제 여부를 안내합니다.
 
 ```
   예약 목록 조회 중...

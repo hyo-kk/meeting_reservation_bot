@@ -1,2 +1,4 @@
 playwright
 python-dotenv
+msal
+requests
